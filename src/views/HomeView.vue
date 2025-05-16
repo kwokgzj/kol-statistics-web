@@ -4,10 +4,29 @@
       <h1>KOL视频数据抓取结果</h1>
     </el-header>
     <el-main>
-      <el-row>
-        <el-col :span="12">
-          <el-button type="primary" @click="toAbout">去其他页面1</el-button>
-          <router-link to="/about">去其他页面2</router-link>
+      <!-- 趋势分析按钮容器 -->
+      <el-row :gutter="24" class="mb-24">
+        <el-col :span="21">
+        </el-col>
+        <el-col :span="1.5">
+          <el-button @click="toAbout" class="trend-btn">
+            <div class="btn-content">
+              <el-icon class="trend-icon">
+                <statistics-button />
+              </el-icon>
+              <span class="btn-text">趋势分析</span>
+            </div>
+          </el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button @click="toSetting" class="trend-btn">
+            <div class="btn-content">
+              <el-icon class="trend-icon">
+                <setting-button />
+              </el-icon>
+              <span class="btn-text">抓取设置</span>
+            </div>
+          </el-button>
         </el-col>
       </el-row>
 
@@ -30,7 +49,7 @@
         <el-table-column prop="engagementRate" label="互动率" width="100" sortable />
         <el-table-column prop="publisher" label="发布者" width="120" sortable />
         <el-table-column prop="channelTitle" label="频道标题" width="120" sortable />
-        <el-table-column prop="nameOfKOL" label="KOL名称" width="120" sortable />
+        <el-table-column prop="nameOfKOL" label="KOL" width="120" sortable />
         <el-table-column prop="platform" label="平台" width="100" sortable
           :filters="platformFilters"
           :filter-method="filterHandler" />
@@ -58,6 +77,8 @@ import { useRouter } from 'vue-router';
 import { getVideoStats } from '@/api/videoapi';
 import type { VideoStats } from '@/api/video.type';
 import { ElMessage } from 'element-plus';
+import StatisticsButton from '@/components/icons/StatisticsButton.vue'
+import SettingButton from '@/components/icons/SettingButton.vue'
 
 // 取得路由实例，用于跳转
 const router = useRouter();
@@ -141,6 +162,32 @@ const filterHandler = (value: string, row: any, column: any) => {
 .home {
   .el-main {
     padding: 20px;
+  }
+
+  .mb-24 {
+    margin-bottom: 10px;
+  }
+
+  .trend-btn {
+    width: 100%;
+    height: auto;
+    padding: 2px;
+
+    .btn-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .trend-icon {
+      font-size: 48px;
+    }
+
+    .btn-text {
+      font-size: 14px;
+      line-height: 1.2;
+    }
   }
 }
 </style>
