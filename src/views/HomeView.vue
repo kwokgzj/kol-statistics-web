@@ -85,12 +85,15 @@ const router = useRouter();
 const loading = ref(false)
 const tableData = ref<VideoStats[]>([])
 
-// 定义一个跳转到其他页面的方法
+// 定义跳转到其他页面的方法
 const toAbout = () => {
   console.log('toAbout');
-  // router.push({ path: '/about' });
   router.push({ name: 'about' });
-  // router.push('/about');
+}
+
+const toSetting = () => {
+  console.log('toSetting');
+  router.push({ name: 'setting' });
 }
 
 // 获取视频统计数据
