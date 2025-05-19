@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    title="新增视频配置"
+    :title="dialogTitle"
     width="50%"
     :close-on-click-modal="false"
   >
@@ -86,7 +86,13 @@
   </el-dialog>
   <el-container class="setting">
     <el-header>
-      <h1>KOL数据抓取条目配置</h1>
+      <div class="header-container">
+        <el-button @click="goBack" type="primary" style="margin-right: 15px">
+          <el-icon><Back /></el-icon>
+          返回
+        </el-button>
+        <h1>KOL数据抓取条目配置</h1>
+      </div>
     </el-header>
     <el-main>
       <!-- 新增条目按钮容器 -->
@@ -147,14 +153,23 @@
 </template>
 
 <script lang="ts" setup>
+import { useRouter } from 'vue-router';
 import { ref, computed, onMounted } from 'vue';
-import { getVideoLinks, removeVideoLink, insertVideoLink, getDictionary } from '@/api/videoapi';
+import { getVideoLinks, removeVideoLink, insertVideoLink, updateVideoLink, getDictionary } from '@/api/videoapi';
 import type { VideoLink, Dictionary } from '@/api/video.type';
-import { Edit, Delete } from '@element-plus/icons-vue'
+import { Edit, Delete, Back } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage, FormInstance, FormRules } from 'element-plus'
 
 const loading = ref(false)
 const tableData = ref<VideoLink[]>([])
+const isEdit = ref(false)
+const dialogTitle = computed(() => isEdit.value ? '编辑视频配置' : '新增视频配置')
+const router = useRouter();
+
+const goBack = () => {
+  console.log('toBack');
+  router.push({ name: 'home' });
+}
 
 // 定义选项数据ref
 const platformOptions = ref<Dictionary[]>([])
@@ -248,8 +263,22 @@ const filterHandler = (value: string, row: any, column: any) => {
 
 // 处理编辑
 const handleEdit = (row: VideoLink) => {
-  console.log('编辑', row)
-  // TODO: 实现编辑功能
+  isEdit.value = true
+  dialogVisible.value = true
+  // 在赋值之前，确保使用正确的选项值
+  const formattedRow = {
+    ...row,
+    // 使用字典中定义的value值，而不是label值
+    language: languageOptions.value.find(opt => opt.label === row.language)?.value || row.language,
+    platform: platformOptions.value.find(opt => opt.label === row.platform)?.value || row.platform,
+    product: productOptions.value.find(opt => opt.label === row.product)?.value || row.product,
+    region: regionOptions.value.find(opt => opt.label === row.region)?.value || row.region
+  }
+  formData.value = formattedRow
+}
+
+const getLabelByValue = (options: Dictionary[], value: string) => {
+  return options.find(opt => opt.value === value)?.label || value
 }
 
 // 处理删除
@@ -341,6 +370,20 @@ const rules = ref<FormRules>({
 
 // 新增按钮点击处理
 const addVideoLink = () => {
+  isEdit.value = false
+  // 重置表单数据
+  formData.value = {
+    videoLinkId: '',
+    videoUrl: '',
+    platformVideoId: '',
+    nameOfKOL: '',
+    platform: '',
+    product: '',
+    language: '',
+    region: '',
+    createdAt: '',
+    isActive: true
+  }
   dialogVisible.value = true
 }
 
@@ -351,25 +394,30 @@ const handleSubmit = async (formEl: FormInstance | undefined) => {
   await formEl.validate(async (valid, fields) => {
     if (valid) {
       try {
-        const response = await insertVideoLink(formData.value)
-        // 添加空值检查
+        let response
+        if (isEdit.value) {
+          // 编辑模式
+          response = await updateVideoLink(formData.value)
+        } else {
+          // 新增模式
+          response = await insertVideoLink(formData.value)
+        }
+
         if (response && response.code === 0) {
-          ElMessage.success('添加成功')
+          ElMessage.success(isEdit.value ? '修改成功' : '添加成功')
           dialogVisible.value = false
           // 重新获取列表数据
           fetchVideoLinks()
           // 重置表单
           formEl.resetFields()
         } else {
-          // 更详细的错误信息
-          const errorMsg = response?.msg || '添加失败(服务器返回异常)'
+          const errorMsg = response?.msg || `${isEdit.value ? '修改' : '添加'}失败(服务器返回异常)`
           ElMessage.error(errorMsg)
           console.error('API响应异常:', response)
         }
       } catch (error: any) {
-        // 更详细的错误处理
-        console.error('添加视频链接失败:', error)
-        const errorMsg = error?.message || '添加失败(网络请求异常)'
+        console.error(`${isEdit.value ? '修改' : '添加'}视频链接失败:`, error)
+        const errorMsg = error?.message || `${isEdit.value ? '修改' : '添加'}失败(网络请求异常)`
         ElMessage.error(errorMsg)
       }
     } else {
@@ -383,6 +431,7 @@ const handleCancel = (formEl: FormInstance | undefined) => {
   if (!formEl) return
   formEl.resetFields()
   dialogVisible.value = false
+  isEdit.value = false // 重置编辑状态
 }
 
 const extractVideoId = (url: string): string => {
@@ -412,6 +461,13 @@ const handleVideoUrlChange = (url: string) => {
 
 <style lang="less" scoped>
 .setting {
+
+  .header-container {
+    display: flex;
+    align-items: center;
+    height: 100%;
+  }
+
   .el-main {
     padding: 10px;
   }
