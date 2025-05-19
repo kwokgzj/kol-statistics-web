@@ -18,7 +18,7 @@ export interface VideoStats {
 }
 
 export interface VideoLink {
-  _id: string;                  // ObjectId转为string类型
+  videoLinkId: string;                  // ObjectId转为string类型
   videoUrl: string;            // 视频链接
   platformVideoId: string;     // 视频平台ID
   nameOfKOL: string;          // kol名称
@@ -27,7 +27,13 @@ export interface VideoLink {
   language: string;           // 语言
   region: string;             // 地区
   createdAt: string;          // 记录创建时间，后端Date类型转为string
-  active: boolean;          // 是否抓取
+  isActive: boolean;          // 是否抓取
+}
+
+export interface Dictionary{
+  value: string; // 字典值
+  label: string; // 字典标签
+  dictionaryType: string; // 字典类型
 }
 
 export interface ApiResponse<T> {
