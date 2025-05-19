@@ -158,7 +158,8 @@ import { ref, computed, onMounted } from 'vue';
 import { getVideoLinks, removeVideoLink, insertVideoLink, updateVideoLink, getDictionary } from '@/api/videoapi';
 import type { VideoLink, Dictionary } from '@/api/video.type';
 import { Edit, Delete, Back } from '@element-plus/icons-vue'
-import { ElMessageBox, ElMessage, FormInstance, FormRules } from 'element-plus'
+import { ElMessageBox, ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 
 const loading = ref(false)
 const tableData = ref<VideoLink[]>([])
@@ -285,12 +286,18 @@ const getLabelByValue = (options: Dictionary[], value: string) => {
 const handleDelete = (row: VideoLink) => {
   ElMessageBox.confirm(
     `此操作将永久删除以下配置, 是否继续?
-    链接：${row.videoUrl}`,
+    平台：${row.platform}
+    链接：${row.videoUrl}
+    产品：${row.product}
+    KOL: ${row.nameOfKOL}
+    语言：${row.language}
+    地区：${row.region}`,
     '警告',
     {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
+      customClass: 'delete-confirm-dialog'
     }
   )
     .then(() => {
@@ -458,6 +465,16 @@ const handleVideoUrlChange = (url: string) => {
 
 </script>
 
+<style lang="less">
+/* 注意：这里不能加 scoped，因为需要影响全局的 MessageBox 样式 */
+.delete-confirm-dialog {
+  .el-message-box__content {
+    min-height: 100px; /* 设置最小高度 */
+    padding: 20px;    /* 增加内边距 */
+    white-space: pre-line; /* 保留换行符 */
+  }
+}
+</style>
 
 <style lang="less" scoped>
 .setting {
