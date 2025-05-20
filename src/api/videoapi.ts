@@ -3,7 +3,8 @@ import type {
   VideoLink,
   VideoStats,
   ApiResponse,
-  Dictionary
+  Dictionary,
+  VideoAnalysis
 } from './video.type';
 
 /**
@@ -54,4 +55,23 @@ export const insertVideoLink = (videoLink: VideoLink): Promise<ApiResponse<any>>
  */
 export const getDictionary = (): Promise<ApiResponse<Dictionary[]>> => {
   return get<ApiResponse<Dictionary[]>>('/dictionary');
+};
+
+/**
+ * 获取视频数据趋势分析
+ */
+export const getVideoStatistics = (videoLinkId: string, statisticalGranularity: string, product: string,
+  publisher: string, kol: string, platform: string, language: string,
+  region: string, startTime: string, endTime: string): Promise<ApiResponse<VideoAnalysis[]>> => {
+
+  return get<ApiResponse<VideoAnalysis[]>>('/video-analysis?videoLinkId=' + videoLinkId +
+    '&statisticalGranularity=' + statisticalGranularity +
+    '&product=' + product +
+    '&publisher=' + publisher +
+    '&kol=' + kol +
+    '&platform=' + platform +
+    '&language=' + language +
+    '&region=' + region +
+    '&startTime=' + startTime +
+    '&endTime=' + endTime);
 };

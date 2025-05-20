@@ -9,7 +9,7 @@
         <el-col :span="21">
         </el-col>
         <el-col :span="1.5">
-          <el-button @click="toAbout" class="trend-btn">
+          <el-button @click="toStatistics" class="trend-btn">
             <div class="btn-content">
               <el-icon class="trend-icon">
                 <statistics-button />
@@ -86,9 +86,9 @@ const loading = ref(false)
 const tableData = ref<VideoStats[]>([])
 
 // 定义跳转到其他页面的方法
-const toAbout = () => {
-  console.log('toAbout');
-  router.push({ name: 'about' });
+const toStatistics = () => {
+  console.log('toStatistics');
+  router.push({ name: 'statistics' });
 }
 
 const toSetting = () => {

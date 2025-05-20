@@ -36,6 +36,16 @@ export interface Dictionary{
   dictionaryType: string; // 字典类型
 }
 
+export interface VideoAnalysis {
+  timeStage: string;               // 时间节点
+  viewCount: string;              // 总播放量
+  commentCount: string;           // 总评论数
+  likeCount: string;              // 总点赞数
+  incrementViewsCount: string;          // 播放量增量
+  incrementCommentsCount: string;       // 评论数增量
+  incrementLikesCount: string;          // 点赞数增量
+}
+
 export interface ApiResponse<T> {
   code: number;   // 响应码, 0-正常
   msg: string;    // 响应信息
