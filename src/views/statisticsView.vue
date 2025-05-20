@@ -116,6 +116,7 @@
       </div>
     </div>
     <div id="analysisChart" style="width: 100%; height: 400px;"></div>
+    <div id="incrementChart" style="width: 100%; height: 400px; margin-top: 20px;"></div>
   </el-container>
 </template>
 
@@ -269,12 +270,18 @@ const handleSearch = async () => {
 }
 
 let chartInstance: echarts.ECharts | null = null;
+let incrementChartInstance: echarts.ECharts | null = null;
 
 // 初始化图表
 const initChart = () => {
   const chartDom = document.getElementById('analysisChart');
+  const incrementChartDom = document.getElementById('incrementChart');
+
   if (chartDom) {
     chartInstance = echarts.init(chartDom);
+  }
+  if (incrementChartDom) {
+    incrementChartInstance = echarts.init(incrementChartDom);
   }
 };
 
@@ -287,12 +294,29 @@ const updateChart = (data: VideoAnalysis[]) => {
   const commentCounts = data.map(item => parseInt(item.commentCount));
   const likeCounts = data.map(item => parseInt(item.likeCount));
 
+  const labelOption = {
+    show: false,
+    position: 'top',
+    distance: 15,
+    align: 'left',
+    verticalAlign: 'middle',
+    rotate: 90,
+    formatter: '{c}  {name|{a}}',
+    fontSize: 16,
+    rich: {
+      name: {}
+    }
+  };
+
   const option = {
     title: {
-      text: 'KOL视频数据趋势'
+      text: '总量趋势图表'
     },
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
     },
     legend: {
       data: ['播放量', '评论数', '点赞数']
@@ -304,38 +328,153 @@ const updateChart = (data: VideoAnalysis[]) => {
       containLabel: true
     },
     toolbox: {
+      show: true,
+      orient: 'vertical',
+      left: 'right',
+      top: 'center',
       feature: {
-        saveAsImage: {}
+        mark: { show: true },
+        dataView: { show: true, readOnly: false },
+        magicType: { show: true, type: ['line', 'bar', 'stack'] },
+        restore: { show: true },
+        saveAsImage: { show: true }
       }
     },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: timeStages
-    },
-    yAxis: {
-      type: 'value'
-    },
+    xAxis: [
+      {
+        type: 'category',
+        axisTick: { show: false },
+        data: timeStages
+      }
+    ],
+    yAxis: [
+      {
+        type: 'value'
+      }
+    ],
     series: [
       {
         name: '播放量',
-        type: 'line',
+        type: 'line',  // 默认使用折线图
+        label: labelOption,
+        emphasis: {
+          focus: 'series'
+        },
         data: viewCounts
       },
       {
         name: '评论数',
-        type: 'line',
+        type: 'line',  // 默认使用折线图
+        label: labelOption,
+        emphasis: {
+          focus: 'series'
+        },
         data: commentCounts
       },
       {
         name: '点赞数',
-        type: 'line',
+        type: 'line',  // 默认使用折线图
+        label: labelOption,
+        emphasis: {
+          focus: 'series'
+        },
         data: likeCounts
       }
     ]
   };
 
   chartInstance.setOption(option);
+  updateIncrementChart(data);
+};
+
+const updateIncrementChart = (data: VideoAnalysis[]) => {
+  if (!incrementChartInstance) return;
+
+  const labelOption = {
+    show: false,
+    position: 'insideBottom',
+    distance: 15,
+    align: 'left',
+    verticalAlign: 'middle',
+    rotate: 90,
+    formatter: '{c}  {name|{a}}',
+    fontSize: 16,
+    rich: {
+      name: {}
+    }
+  };
+
+  const option = {
+    title: {
+      text: '增量趋势图表'
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    legend: {
+      data: ['播放量增量', '评论数增量', '点赞数增量']
+    },
+    toolbox: {
+      show: true,
+      orient: 'vertical',
+      left: 'right',
+      top: 'center',
+      feature: {
+        mark: { show: true },
+        dataView: { show: true, readOnly: false },
+        magicType: { show: true, type: ['line', 'bar', 'stack'] },
+        restore: { show: true },
+        saveAsImage: { show: true }
+      }
+    },
+    xAxis: [
+      {
+        type: 'category',
+        axisTick: { show: false },
+        data: data.map(item => item.timeStage)
+      }
+    ],
+    yAxis: [
+      {
+        type: 'value'
+      }
+    ],
+    series: [
+      {
+        name: '播放量增量',
+        type: 'bar',
+        barGap: 0,
+        label: labelOption,
+        emphasis: {
+          focus: 'series'
+        },
+        data: data.map(item => parseInt(item.incrementViewsCount))
+      },
+      {
+        name: '评论数增量',
+        type: 'bar',
+        label: labelOption,
+        emphasis: {
+          focus: 'series'
+        },
+        data: data.map(item => parseInt(item.incrementCommentsCount))
+      },
+      {
+        name: '点赞数增量',
+        type: 'bar',
+        label: labelOption,
+        emphasis: {
+          focus: 'series'
+        },
+        data: data.map(item => parseInt(item.incrementLikesCount))
+      }
+    ]
+  };
+
+  incrementChartInstance.setOption(option);
 };
 
 // 组件卸载时销毁图表
@@ -343,12 +482,18 @@ onUnmounted(() => {
   if (chartInstance) {
     chartInstance.dispose();
   }
+  if (incrementChartInstance) {
+    incrementChartInstance.dispose();
+  }
 });
 
 // 窗口大小改变时重置图表大小
 window.addEventListener('resize', () => {
   if (chartInstance) {
     chartInstance.resize();
+  }
+  if (incrementChartInstance) {
+    incrementChartInstance.resize();
   }
 });
 
@@ -391,6 +536,15 @@ window.addEventListener('resize', () => {
 }
 
 #analysisChart {
+  margin-top: 20px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#incrementChart {
   margin-top: 20px;
   border: 1px solid #ebeef5;
   border-radius: 4px;
