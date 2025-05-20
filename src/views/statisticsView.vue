@@ -8,7 +8,7 @@
       <h1>KOL视频数据趋势分析</h1>
     </div>
   </el-header>
-  <el-container class="statistics">
+  <el-container class="statistics" direction="vertical">
     <div class="filter-table">
       <el-table :data="filterRows" border style="width: 100%" size="small">
         <el-table-column prop="type" label="筛选类型" width="120">
@@ -16,18 +16,18 @@
             <span class="filter-label">{{ row.label }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="videoLink" label="视频链接" width="150">
+        <el-table-column prop="videoUrl" label="视频链接" width="150">
           <template #default="{ row }">
             <el-input
               v-if="row.type === 'condition'"
-              v-model="filters.videoLink"
+              v-model="filters.videoUrl"
               placeholder="不限"
             />
           </template>
         </el-table-column>
-        <el-table-column prop="granularity" label="统计颗粒度" width="150">
+        <el-table-column prop="statisticalGranularity" label="统计颗粒度" width="150">
           <template #default="{ row }">
-            <el-select v-if="row.type === 'condition'" v-model="filters.granularity" placeholder="请选择">
+            <el-select v-if="row.type === 'condition'" v-model="filters.statisticalGranularity" placeholder="请选择">
               <el-option label="天" value="day" />
               <el-option label="周" value="week" />
               <el-option label="月" value="month" />
@@ -84,11 +84,11 @@
             </el-select>
           </template>
         </el-table-column>
-        <el-table-column prop="startDate" label="起始时间" width="150">
+        <el-table-column prop="startTime" label="起始时间" width="150">
           <template #default="{ row }">
             <template v-if="row.type === 'condition'">
               <el-date-picker
-                v-model="filters.startDate"
+                v-model="filters.startTime"
                 :type="datePickerType"
                 placeholder="起始时间"
                 style="width: 100%"
@@ -96,11 +96,11 @@
             </template>
           </template>
         </el-table-column>
-        <el-table-column prop="endDate" label="结束时间" width="150">
+        <el-table-column prop="endTime" label="结束时间" width="150">
           <template #default="{ row }">
             <template v-if="row.type === 'condition'">
               <el-date-picker
-                v-model="filters.endDate"
+                v-model="filters.endTime"
                 :type="datePickerType"
                 placeholder="结束时间"
                 style="width: 100%"
@@ -115,16 +115,18 @@
         </div>
       </div>
     </div>
+    <div id="analysisChart" style="width: 100%; height: 400px;"></div>
   </el-container>
 </template>
 
 <script lang="ts" setup>
 import { useRouter } from 'vue-router';
 import { Back } from '@element-plus/icons-vue'
-import { ref, computed, onMounted } from 'vue';
-import type { Dictionary } from '@/api/video.type';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import type { Dictionary, VideoAnalysis } from '@/api/video.type';
 import { getDictionary, getVideoStatistics } from '@/api/videoapi';
 import { ElMessage } from 'element-plus'
+import * as echarts from 'echarts';
 
 const router = useRouter();
 
@@ -140,21 +142,21 @@ const filterRows = [
 
 // 筛选条件
 const filters = ref({
-  videoLink: '',
-  granularity: 'day',
+  videoUrl: '',
+  statisticalGranularity: 'day',
   product: '',
   publisher: '',
   kol: '',
   platform: '',
   language: '',
   region: '',
-  startDate: new Date(),
-  endDate: new Date(),
+  startTime: new Date(),
+  endTime: new Date(),
 });
 
 // 日期选择器类型
 const datePickerType = computed(() => {
-  switch (filters.value.granularity) {
+  switch (filters.value.statisticalGranularity) {
     case 'week':
       return 'week'
     case 'month':
@@ -191,7 +193,8 @@ const fetchDictionary = async () => {
 }
 
 onMounted(() => {
-  fetchDictionary()
+  fetchDictionary();
+  initChart();
 })
 
 const formatDate = (date: Date): string => {
@@ -206,26 +209,26 @@ const handleSearch = async () => {
   try {
     // 检查并打印所有筛选条件值
     console.log('筛选条件:', {
-      videoLink: filters.value.videoLink,
-      granularity: filters.value.granularity,
+      videoLink: filters.value.videoUrl,
+      granularity: filters.value.statisticalGranularity,
       product: filters.value.product,
       publisher: filters.value.publisher,
       kol: filters.value.kol,
       platform: filters.value.platform,
       language: filters.value.language,
       region: filters.value.region,
-      startDate: filters.value.startDate,
-      endDate: filters.value.endDate
+      startDate: filters.value.startTime,
+      endDate: filters.value.endTime
     });
 
     // 确保日期存在再进行转换
-    const startTimeStr = filters.value.startDate ? formatDate(filters.value.startDate) : '';
-    const endTimeStr = filters.value.endDate ? formatDate(filters.value.endDate) : '';
+    const startTimeStr = filters.value.startTime ? formatDate(filters.value.startTime) : '';
+    const endTimeStr = filters.value.endTime ? formatDate(filters.value.endTime) : '';
 
     // 处理空值，将空值转换为空字符串
     const params = {
-      videoLink: filters.value.videoLink || '',
-      granularity: filters.value.granularity || 'day', // 默认值为 'day'
+      videoLink: filters.value.videoUrl || '',
+      granularity: filters.value.statisticalGranularity || 'day', // 默认值为 'day'
       product: filters.value.product || '',
       publisher: filters.value.publisher || '',
       kol: filters.value.kol || '',
@@ -253,6 +256,8 @@ const handleSearch = async () => {
 
     if (response.code === 0) {
       console.log('获取视频趋势分析数据:', response.data);
+      // 更新图表
+      updateChart(response.data);
       ElMessage.success('获取视频趋势分析成功');
     } else {
       ElMessage.error(response.msg || '获取视频趋势分析失败');
@@ -263,12 +268,97 @@ const handleSearch = async () => {
   }
 }
 
-// TODO: 在组件挂载时获取下拉选项数据
+let chartInstance: echarts.ECharts | null = null;
+
+// 初始化图表
+const initChart = () => {
+  const chartDom = document.getElementById('analysisChart');
+  if (chartDom) {
+    chartInstance = echarts.init(chartDom);
+  }
+};
+
+// 更新图表数据
+const updateChart = (data: VideoAnalysis[]) => {
+  if (!chartInstance) return;
+
+  const timeStages = data.map(item => item.timeStage);
+  const viewCounts = data.map(item => parseInt(item.viewCount));
+  const commentCounts = data.map(item => parseInt(item.commentCount));
+  const likeCounts = data.map(item => parseInt(item.likeCount));
+
+  const option = {
+    title: {
+      text: 'KOL视频数据趋势'
+    },
+    tooltip: {
+      trigger: 'axis'
+    },
+    legend: {
+      data: ['播放量', '评论数', '点赞数']
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    toolbox: {
+      feature: {
+        saveAsImage: {}
+      }
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: timeStages
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [
+      {
+        name: '播放量',
+        type: 'line',
+        data: viewCounts
+      },
+      {
+        name: '评论数',
+        type: 'line',
+        data: commentCounts
+      },
+      {
+        name: '点赞数',
+        type: 'line',
+        data: likeCounts
+      }
+    ]
+  };
+
+  chartInstance.setOption(option);
+};
+
+// 组件卸载时销毁图表
+onUnmounted(() => {
+  if (chartInstance) {
+    chartInstance.dispose();
+  }
+});
+
+// 窗口大小改变时重置图表大小
+window.addEventListener('resize', () => {
+  if (chartInstance) {
+    chartInstance.resize();
+  }
+});
+
 </script>
 
 <style lang="less" scoped>
 .statistics {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .filter-table {
@@ -295,4 +385,18 @@ const handleSearch = async () => {
     margin-left: auto;
   }
 }
+
+.el-main {
+  padding: 0;
+}
+
+#analysisChart {
+  margin-top: 20px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 </style>

@@ -60,11 +60,11 @@ export const getDictionary = (): Promise<ApiResponse<Dictionary[]>> => {
 /**
  * 获取视频数据趋势分析
  */
-export const getVideoStatistics = (videoLinkId: string, statisticalGranularity: string, product: string,
+export const getVideoStatistics = (videoUrl: string, statisticalGranularity: string, product: string,
   publisher: string, kol: string, platform: string, language: string,
   region: string, startTime: string, endTime: string): Promise<ApiResponse<VideoAnalysis[]>> => {
 
-  return get<ApiResponse<VideoAnalysis[]>>('/video-analysis?videoLinkId=' + videoLinkId +
+  return get<ApiResponse<VideoAnalysis[]>>('/video-analysis?videoUrl=' + videoUrl +
     '&statisticalGranularity=' + statisticalGranularity +
     '&product=' + product +
     '&publisher=' + publisher +
